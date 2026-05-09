@@ -1,4 +1,5 @@
-from typing import AsyncIterator
+import asyncio
+from collections.abc import AsyncIterator
 
 from rich.console import Console
 from rich.live import Live
@@ -6,7 +7,6 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.text import Text
-import asyncio
 
 console = Console()
 
