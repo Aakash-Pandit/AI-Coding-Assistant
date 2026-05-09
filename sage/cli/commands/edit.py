@@ -5,7 +5,14 @@ from pathlib import Path
 
 import typer
 
-from sage.cli.output import console, print_error, print_info, print_success, print_warning, print_diff
+from sage.cli.output import (
+    console,
+    print_diff,
+    print_error,
+    print_info,
+    print_success,
+    print_warning,
+)
 
 app = typer.Typer()
 
@@ -17,9 +24,9 @@ def edit(task: str = typer.Argument(..., help="Describe the change to make.")) -
 
 
 async def _run_edit(task: str) -> None:
+    from sage.docker.manager import DockerManager
     from sage.editing.diff import DiffGenerator, make_diff_text
     from sage.editing.patcher import FilePatcher
-    from sage.docker.manager import DockerManager
 
     docker = DockerManager()
     try:
