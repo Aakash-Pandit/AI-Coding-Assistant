@@ -3,7 +3,7 @@ RAG pipeline: retrieve relevant chunks → build prompt → stream LLM answer.
 """
 from __future__ import annotations
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from sage.agent.prompts import SYSTEM_ASK
 from sage.llm.manager import get_provider
