@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-from sage.cli.output import console, print_error, print_info, print_success, stream_response_async
+from sage.cli.output import console, print_error, print_info, print_success
 
 app = typer.Typer(help="Git-aware operations.")
 
@@ -12,10 +12,13 @@ app = typer.Typer(help="Git-aware operations.")
 @app.command("diff")
 def git_diff(
     staged: bool = typer.Option(False, "--staged", "-s", help="Show only staged changes."),
-    summarise: bool = typer.Option(True, "--summarise/--no-summarise", help="AI summary of the diff."),
+    summarise: bool = typer.Option(
+        True, "--summarise/--no-summarise", help="AI summary of the diff."
+    ),
 ) -> None:
     """Show and optionally summarise the current git diff with AI."""
-    from sage.tools.git_tools import git_diff as _git_diff, git_status
+    from sage.tools.git_tools import git_diff as _git_diff
+    from sage.tools.git_tools import git_status
 
     status = git_status()
     console.print(f"\n[bold]Git Status[/bold]\n{status}\n")
@@ -36,7 +39,7 @@ def git_commit(
     push: bool = typer.Option(False, "--push", "-p", help="Push after committing."),
 ) -> None:
     """Generate an AI commit message for staged changes and commit."""
-    from sage.tools.git_tools import git_diff as _git_diff, git_status
+    from sage.tools.git_tools import git_diff as _git_diff
 
     diff = _git_diff(staged=True)
     if "No changes" in diff:
@@ -69,33 +72,8 @@ def git_status_cmd() -> None:
 # ------------------------------------------------------------------
 
 def _ai_summarise_diff(diff: str) -> None:
-    from sage.llm.manager import get_provider
     from sage.docker.manager import DockerManager
-
-    try:
-        DockerManager().ensure_running()
-    except RuntimeError as e:
-        print_error(str(e))
-        return
-
-    provider = get_provider()
-    messages = [
-        {
-            "role": "system",
-            "content": "You are an expert code reviewer. Summarise the following git diff concisely: what changed and why it matters.",
-        },
-        {"role": "user", "content": f"```diff\n{diff[:4000]}\n```"},
-    ]
-
-    console.print("[bold]AI Summary:[/bold]")
-    from sage.cli.output import stream_response_sync
-    stream_response_sync(provider.chat(messages, stream=True))
-
-
-async def _generate_and_commit(diff: str, push: bool) -> None:
     from sage.llm.manager import get_provider
-    from sage.docker.manager import DockerManager
-    import subprocess
 
     try:
         DockerManager().ensure_running()
@@ -108,12 +86,45 @@ async def _generate_and_commit(diff: str, push: bool) -> None:
         {
             "role": "system",
             "content": (
-                "You are an expert at writing git commit messages following the Conventional Commits spec. "
-                "Output ONLY the commit message — no explanation, no quotes, no markdown."
+                "You are an expert code reviewer. Summarise the following git diff "
+                "concisely: what changed and why it matters."
+            ),
+        },
+        {"role": "user", "content": f"```diff\n{diff[:4000]}\n```"},
+    ]
+
+    console.print("[bold]AI Summary:[/bold]")
+    from sage.cli.output import stream_response_sync
+    stream_response_sync(provider.chat(messages, stream=True))
+
+
+async def _generate_and_commit(diff: str, push: bool) -> None:
+    import subprocess
+
+    from sage.docker.manager import DockerManager
+    from sage.llm.manager import get_provider
+
+    try:
+        DockerManager().ensure_running()
+    except RuntimeError as e:
+        print_error(str(e))
+        return
+
+    provider = get_provider()
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are an expert at writing git commit messages "
+                "following the Conventional Commits spec. "
+                "Output ONLY the commit message — no explanation, no quotes, no markdown. "
                 "Format: <type>(<scope>): <description>\n\n<optional body>"
             ),
         },
-        {"role": "user", "content": f"Write a commit message for this diff:\n\n```diff\n{diff[:4000]}\n```"},
+        {
+            "role": "user",
+            "content": f"Write a commit message for this diff:\n\n```diff\n{diff[:4000]}\n```",
+        },
     ]
 
     console.print("[bold]Generating commit message…[/bold]")
