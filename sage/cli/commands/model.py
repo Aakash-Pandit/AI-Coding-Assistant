@@ -54,8 +54,6 @@ def pull_model(name: str = typer.Argument(..., help="Model name, e.g. qwen2.5-co
 @app.command("switch")
 def switch_model(name: str = typer.Argument(..., help="Model name to set as default")) -> None:
     """Switch the default model (updates .env in the current directory)."""
-    env_path = typer.get_app_dir("sage")
-    # Simple approach: write/update .env in cwd
     import re
     from pathlib import Path
 
