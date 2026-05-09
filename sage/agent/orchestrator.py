@@ -11,9 +11,9 @@ The agent loops until:
 from __future__ import annotations
 
 import json
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
-from langgraph.graph import END, START, StateGraph
+from langgraph.graph import StateGraph
 
 from sage.agent.prompts import SYSTEM_AGENT
 from sage.agent.state import AgentState
@@ -95,7 +95,9 @@ class AgentOrchestrator:
         if state["final_answer"]:
             yield state["final_answer"]
         else:
-            async for chunk in self._provider.chat(state["messages"], stream=True, model=self._model):
+            async for chunk in self._provider.chat(
+                state["messages"], stream=True, model=self._model
+            ):
                 yield chunk
 
     # ------------------------------------------------------------------
@@ -105,7 +107,10 @@ class AgentOrchestrator:
     def _build_tool_prompt(self) -> str:
         """Build a human-readable tool catalogue to inject into the system prompt."""
         lines = ["\n\n## Available Tools\n"]
-        lines.append("Call a tool using a JSON block like:\n```json\n{\"tool\": \"<name>\", \"arguments\": {<args>}}\n```\n")
+        lines.append(
+            "Call a tool using a JSON block like:\n"
+            "```json\n{\"tool\": \"<name>\", \"arguments\": {<args>}}\n```\n"
+        )
         for spec in REGISTRY.get_schema():
             fn = spec["function"]
             props = fn["parameters"].get("properties", {})
