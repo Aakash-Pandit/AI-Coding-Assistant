@@ -3,15 +3,14 @@ from __future__ import annotations
 import asyncio
 import subprocess
 import time
-from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from sage.cli import output as out
-from sage.cli.output import stream_response_async
 from sage.cli.commands import edit, git, index, model
+from sage.cli.output import stream_response_async
 from sage.config.settings import get_settings
 from sage.docker.manager import DockerManager
 from sage.llm.ollama import OllamaProvider
@@ -156,7 +155,7 @@ def status() -> None:
 @app.command(name="run")
 def run_agent(
     task: str = typer.Argument(..., help="Task for the autonomous agent to complete."),
-    model_name: Optional[str] = typer.Option(None, "--model", "-m"),
+    model_name: str | None = typer.Option(None, "--model", "-m"),
 ) -> None:
     """Run the autonomous agent on a multi-step task (uses all tools)."""
     _ensure_docker()
@@ -184,7 +183,7 @@ def run_agent(
 @app.callback(invoke_without_command=True)
 def default(
     ctx: typer.Context,
-    model_name: Optional[str] = typer.Option(
+    model_name: str | None = typer.Option(
         None, "--model", "-m", help="Override the default model for this query."
     ),
     agent_mode: bool = typer.Option(
