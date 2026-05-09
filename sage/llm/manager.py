@@ -1,7 +1,6 @@
 from sage.llm.base import BaseLLMProvider
 from sage.llm.ollama import OllamaProvider
 
-
 _provider: BaseLLMProvider | None = None
 
 
