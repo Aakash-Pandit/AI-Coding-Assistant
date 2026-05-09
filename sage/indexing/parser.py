@@ -9,7 +9,6 @@ character splitter since there are no meaningful AST boundaries.
 """
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel
@@ -61,9 +60,9 @@ class CodeParser:
             return self._parsers[language]
 
         try:
-            import tree_sitter_python as tspython
-            import tree_sitter_javascript as tsjavascript
             import tree_sitter_go as tsgo
+            import tree_sitter_javascript as tsjavascript
+            import tree_sitter_python as tspython
             from tree_sitter import Language, Parser
 
             lang_map = {
