@@ -49,7 +49,6 @@ def list_files(directory: str = ".") -> str:
 @REGISTRY.tool
 def search_in_files(pattern: str, directory: str = ".") -> str:
     """Search for a pattern (substring) across all source files in a directory."""
-    import fnmatch
 
     p = _safe_path(directory)
     supported = {".py", ".js", ".ts", ".go", ".md", ".yaml", ".yml", ".json"}
