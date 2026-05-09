@@ -1,10 +1,10 @@
 import json
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import httpx
 
-from sage.llm.base import BaseLLMProvider
 from sage.config.settings import get_settings
+from sage.llm.base import BaseLLMProvider
 
 
 class OllamaProvider(BaseLLMProvider):
