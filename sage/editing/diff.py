@@ -8,8 +8,8 @@ The LLM is prompted to output raw unified diff blocks. This module:
 """
 from __future__ import annotations
 
-import re
 import difflib
+import re
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -17,7 +17,6 @@ from pydantic import BaseModel
 from sage.agent.prompts import SYSTEM_EDIT
 from sage.llm.manager import get_provider
 from sage.rag.retriever import Retriever
-from sage.rag.store import SearchResult
 
 
 class FileDiff(BaseModel):
@@ -135,7 +134,12 @@ class DiffGenerator:
                 src_start = int(m.group(1)) - 1
                 hunk_lines = []
                 i += 1
-                while i < len(diff_lines) and not hunk_re.match(diff_lines[i]) and not diff_lines[i].startswith("--- ") and not diff_lines[i].startswith("+++ "):
+                while (
+                    i < len(diff_lines)
+                    and not hunk_re.match(diff_lines[i])
+                    and not diff_lines[i].startswith("--- ")
+                    and not diff_lines[i].startswith("+++ ")
+                ):
                     hunk_lines.append(diff_lines[i])
                     i += 1
 
