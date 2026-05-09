@@ -5,7 +5,8 @@ from sage.tools.registry import REGISTRY
 
 
 def _repo():
-    from git import Repo, InvalidGitRepositoryError
+    from git import InvalidGitRepositoryError, Repo
+
     from sage.config.settings import get_settings
     try:
         return Repo(get_settings().project_root, search_parent_directories=True)
