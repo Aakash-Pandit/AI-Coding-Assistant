@@ -52,8 +52,8 @@ class OllamaProvider(BaseLLMProvider):
             resp.raise_for_status()
             return [m["name"] for m in resp.json().get("models", [])]
 
-    async def pull_model(self, model: str) -> AsyncIterator[str]:
-        """Pull a model and stream progress messages."""
+    async def pull_model(self, model: str) -> AsyncIterator[dict]:
+        """Pull a model and stream raw progress dicts from Ollama /api/pull."""
         payload = {"name": model, "stream": True}
         async with httpx.AsyncClient(timeout=600.0) as client:
             async with client.stream("POST", f"{self.host}/api/pull", json=payload) as response:
@@ -65,8 +65,4 @@ class OllamaProvider(BaseLLMProvider):
                         data = json.loads(line)
                     except json.JSONDecodeError:
                         continue
-                    status = data.get("status", "")
-                    if status:
-                        yield status
-                    if data.get("done"):
-                        break
+                    yield data

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import subprocess
 import time
 
 import typer
@@ -36,15 +35,14 @@ def init() -> None:
     """First-time setup: start Docker, pull model, and confirm everything is ready."""
     docker = DockerManager()
 
-    # Step 1 — Start Docker / Ollama
+    # Step 1 — Start Ollama
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), transient=True) as progress:
         task = progress.add_task("Starting Ollama LLM server…")
         try:
             if docker.is_running():
-                progress.update(task, description="Ollama already running — skipping start.")
+                progress.update(task, description="Ollama already running.")
             else:
                 docker.start_ollama()
-                # Wait until Ollama HTTP API is healthy
                 deadline = time.time() + 60
                 while time.time() < deadline:
                     if docker.is_running():
@@ -52,7 +50,8 @@ def init() -> None:
                     time.sleep(2)
                 else:
                     out.print_error(
-                        "Ollama did not become healthy within 60s. Is Docker Desktop running?"
+                        "Ollama did not become healthy within 60s. "
+                        "Is Docker Desktop running?"
                     )
                     raise typer.Exit(1)
         except typer.Exit:
@@ -63,41 +62,15 @@ def init() -> None:
 
     out.print_success("Ollama is running.")
 
-    # Step 2 — Wait for model-init container to finish pulling the model
-    console.print(
-        "\n[bold]Pulling [cyan]qwen2.5-coder:7b[/cyan][/bold] — this takes 5–10 min on first run "
-        "(cached forever after).\n"
-        "Streaming model-init logs:\n"
-    )
-    result = subprocess.run(
-        ["docker", "logs", "sage-model-init", "--follow"],
-        capture_output=False,
-    )
-    if result.returncode not in (0, 1):
-        # Container may not exist yet if Ollama was already healthy before compose ran model-init.
-        # Try waiting a moment and re-checking.
-        time.sleep(3)
-        subprocess.run(["docker", "logs", "sage-model-init", "--follow"], capture_output=False)
+    # Step 2 — Pull model with live progress bar
+    settings = get_settings()
+    model_name = settings.default_model
 
-    # Step 3 — Verify model is available
-    with Progress(SpinnerColumn(), TextColumn("{task.description}"), transient=True) as progress:
-        check_task = progress.add_task("Verifying model is available…")
-        import httpx
-        try:
-            resp = httpx.get("http://localhost:11434/api/tags", timeout=5.0)
-            models = [m["name"] for m in resp.json().get("models", [])]
-            model_ready = any("qwen2.5-coder" in m for m in models)
-            progress.update(check_task, description="Done.")
-        except Exception:
-            model_ready = False
-
-    if model_ready:
-        out.print_success("Model [bold]qwen2.5-coder:7b[/bold] is ready.")
-    else:
-        out.print_warning(
-            "Model not yet confirmed. If the pull is still running, wait and then run:\n"
-            "  [bold]docker logs sage-model-init -f[/bold]"
-        )
+    try:
+        asyncio.run(_pull_model_with_progress(model_name))
+    except Exception as e:
+        out.print_error(f"Model pull failed: {e}")
+        raise typer.Exit(1)
 
     console.print(
         "\n[bold green]Sage is ready![/bold green]\n\n"
@@ -106,6 +79,63 @@ def init() -> None:
         "  [bold]sage index[/bold]       [dim]# index the codebase once[/dim]\n"
         "  [bold]sage \"...\"[/bold]      [dim]# start asking questions[/dim]\n"
     )
+
+
+async def _pull_model_with_progress(model_name: str) -> None:
+    from rich.progress import (
+        BarColumn,
+        DownloadColumn,
+        Progress,
+        TextColumn,
+        TimeRemainingColumn,
+        TransferSpeedColumn,
+    )
+
+    provider = OllamaProvider()
+
+    # Check if model already exists
+    try:
+        existing = await provider.list_models()
+        if any(model_name in m for m in existing):
+            out.print_success(f"Model [bold]{model_name}[/bold] already downloaded.")
+            return
+    except Exception:
+        pass
+
+    console.print(
+        f"\n[bold]Pulling [cyan]{model_name}[/cyan][/bold] "
+        "— first run takes 5–10 min (~4 GB), cached forever after.\n"
+    )
+
+    with Progress(
+        TextColumn("[bold cyan]{task.description}"),
+        BarColumn(),
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+        task_id = progress.add_task(f"Downloading {model_name}", total=None)
+        current_digest = ""
+
+        async for data in provider.pull_model(model_name):
+            status = data.get("status", "")
+            total = data.get("total")
+            completed = data.get("completed")
+            digest = data.get("digest", "")
+
+            # New layer starting — reset progress for this layer
+            if digest and digest != current_digest:
+                current_digest = digest
+                short = digest.split(":")[-1][:12] if ":" in digest else digest[:12]
+                progress.update(task_id, description=f"Pulling {short}", total=total, completed=0)
+            elif total and completed is not None:
+                progress.update(task_id, total=total, completed=completed)
+            elif status and not total:
+                # Status-only lines: "pulling manifest", "verifying sha256", etc.
+                progress.update(task_id, description=status, total=None, completed=0)
+
+    out.print_success(f"Model [bold]{model_name}[/bold] is ready.")
 
 
 @app.command(name="start")
