@@ -82,7 +82,11 @@ class IndexingPipeline:
                 all_embeddings_list.append(vecs)
                 progress.advance(embed_task, advance=len(batch))
 
-            all_embeddings = np.vstack(all_embeddings_list) if all_embeddings_list else np.empty((0, 384), dtype="float32")
+            all_embeddings = (
+                np.vstack(all_embeddings_list)
+                if all_embeddings_list
+                else np.empty((0, 384), dtype="float32")
+            )
             progress.update(embed_task, description=f"Embedded {len(all_chunks)} chunks")
 
             # 4. Store
