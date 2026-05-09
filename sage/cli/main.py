@@ -318,7 +318,9 @@ def _ask_with_rag(query: str, model_name: str | None) -> None:
         pipeline = RAGPipeline(model=model_name)
         out.stream_response_sync(pipeline.answer(query))
     except Exception as e:
-        out.print_error(f"RAG pipeline failed: {e}. Falling back to direct LLM.")
+        out.print_error(
+            f"RAG pipeline failed ({type(e).__name__}: {e}). Falling back to direct LLM."
+        )
         _ask_direct(query, model_name)
 
 

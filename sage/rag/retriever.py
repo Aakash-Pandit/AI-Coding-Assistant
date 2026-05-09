@@ -9,19 +9,21 @@ from sage.rag.store import FAISSStore, SearchResult
 
 MAX_CONTEXT_CHARS = 12_000   # ~3k tokens at 4 chars/token
 RERANK_KEYWORD_WEIGHT = 0.15  # blend keyword overlap into semantic score
+# Global cache for the store to avoid reloading from disk on every query
+_GLOBAL_STORE = None
 
 
 class Retriever:
     def __init__(self) -> None:
         settings = get_settings()
-        self._store: FAISSStore | None = None
         self._embedder = Embedder()
         self._index_dir = settings.index_dir
 
     def _get_store(self) -> FAISSStore:
-        if self._store is None:
-            self._store = FAISSStore.load(self._index_dir)
-        return self._store
+        global _GLOBAL_STORE
+        if _GLOBAL_STORE is None:
+            _GLOBAL_STORE = FAISSStore.load(self._index_dir)
+        return _GLOBAL_STORE
 
     # ------------------------------------------------------------------
     # Public API

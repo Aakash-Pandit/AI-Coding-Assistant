@@ -20,7 +20,8 @@ class Settings(BaseSettings):
 
     ollama_host: str = "http://localhost:11434"
     default_model: str = "qwen2.5-coder:7b"
-    tavily_api_key: str = ""
+    tavily_api_key: str = Field(default="", alias="TAVILY_API_KEY")
+    hf_token: str = Field(default="", alias="HF_TOKEN")
 
     project_root: Path = Field(default_factory=Path.cwd)
 
@@ -38,4 +39,15 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+
+    # Force export keys to environment for sub-libraries
+    import os
+
+    if settings.hf_token:
+        os.environ["HF_TOKEN"] = settings.hf_token
+
+    if settings.tavily_api_key:
+        os.environ["TAVILY_API_KEY"] = settings.tavily_api_key
+
+    return settings
