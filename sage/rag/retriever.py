@@ -7,7 +7,7 @@ from sage.config.settings import get_settings
 from sage.rag.embedder import Embedder
 from sage.rag.store import FAISSStore, SearchResult
 
-MAX_CONTEXT_CHARS = 12_000   # ~3k tokens at 4 chars/token
+MAX_CONTEXT_CHARS = 10_000   # ~2.5k tokens
 RERANK_KEYWORD_WEIGHT = 0.15  # blend keyword overlap into semantic score
 # Global cache for the store to avoid reloading from disk on every query
 _GLOBAL_STORE = None

@@ -22,7 +22,7 @@ class OllamaProvider(BaseLLMProvider):
         target_model = model or self.default_model
         payload = {"model": target_model, "messages": messages, "stream": stream}
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             async with client.stream("POST", f"{self.host}/api/chat", json=payload) as response:
                 response.raise_for_status()
                 async for line in response.aiter_lines():
