@@ -12,8 +12,8 @@ def search_codebase(query: str, k: int = 5) -> str:
     Requires the codebase to be indexed first with `sage index`.
     """
     from sage.config.settings import get_settings
-    from sage.rag.store import FAISSStore
     from sage.rag.embedder import Embedder
+    from sage.rag.store import FAISSStore
 
     settings = get_settings()
     index_path = settings.index_dir / "repo.faiss"
