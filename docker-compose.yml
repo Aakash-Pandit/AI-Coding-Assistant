@@ -1,0 +1,36 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sage-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Pulls the default model automatically on first run, then exits.
+  model-init:
+    image: ollama/ollama:latest
+    container_name: sage-model-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+        echo 'Pulling qwen2.5-coder:7b (this runs once on first install)...' &&
+        OLLAMA_HOST=http://ollama:11434 ollama pull qwen2.5-coder:7b &&
+        echo 'Model ready.'
+      "
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: "no"
+
+volumes:
+  ollama_models:
+    driver: local
