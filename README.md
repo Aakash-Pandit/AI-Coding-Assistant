@@ -21,7 +21,7 @@ sage run "Find all TODOs and summarise what needs fixing"
 
 ```bash
 # 1. Install sage globally
-pipx install git+https://github.com/Aakash-Pandit/sage.git
+pipx install git+https://github.com/Aakash-Pandit/AI-Coding-Assistant.git
 
 # 2. First-time setup: starts Docker, pulls model, confirms everything is ready
 sage init
