@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 import time
 
+import click
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from typer.core import TyperGroup
 
 from sage.cli import output as out
 from sage.cli.commands import edit, git, index, model
@@ -16,8 +18,24 @@ from sage.llm.ollama import OllamaProvider
 
 console = Console()
 
+
+class _FreeformGroup(TyperGroup):
+    """Route unknown 'subcommands' to the default callback as free-form query text."""
+
+    def invoke(self, ctx: click.Context) -> object:
+        # If the first protected arg isn't a known subcommand, treat the whole
+        # thing as a free-form query and let the group callback handle it.
+        if ctx._protected_args:
+            cmd_name = ctx._protected_args[0]
+            if cmd_name not in self.commands:
+                ctx.args = list(ctx._protected_args) + list(ctx.args)
+                ctx._protected_args = []
+        return super().invoke(ctx)
+
+
 app = typer.Typer(
     name="sage",
+    cls=_FreeformGroup,
     help='Local-first AI coding assistant. Just ask: sage "your question"',
     no_args_is_help=False,
     rich_markup_mode="rich",
