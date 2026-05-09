@@ -98,7 +98,7 @@ class FAISSStore:
         )
 
     @classmethod
-    def load(cls, directory: Path) -> "FAISSStore":
+    def load(cls, directory: Path) -> FAISSStore:
         index_path = directory / "repo.faiss"
         meta_path = directory / "repo.json"
 
